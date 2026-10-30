@@ -113,3 +113,4 @@ Then disconnect from the internet. The script confirms that public hosts are unr
 - Category rules are keyword based. Correct them on the Transactions page.
 - Conversations are not saved between sessions, and single statements cannot yet be deleted individually.
 - Column mapping and plain-text import are not implemented.
+- Charts use plain CSS. Browser end-to-end tests are not included.
