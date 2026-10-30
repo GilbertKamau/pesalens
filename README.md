@@ -95,6 +95,8 @@ npm run verify:offline
 
 Then disconnect from the internet. The script confirms that public hosts are unreachable, loads the model fresh, asks new questions, and writes the evidence to `data/offline-proof.txt`.
 
+Result on the tested device, 30 October 2026: all three probe hosts were unreachable, the model loaded in 22 s, both fresh questions were answered correctly in under 20 s each, and the hosts were still unreachable afterwards.
+
 ## Privacy and security
 
 - Statements, transactions and questions stay on the device. There are no analytics or external AI calls.
