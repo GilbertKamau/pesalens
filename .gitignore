@@ -1,0 +1,15 @@
+docs/
+data/
+node_modules/
+dist/
+*.db
+*.db-*
+*.sqlite
+*.gguf
+models/
+uploads/
+logs/
+*.log
+.env
+.env.*
+qvac.config.json
