@@ -1,5 +1,5 @@
 import { formatKes } from '../domain/money.ts';
-import { summarize, type Category, type Transaction } from '../domain/transaction.ts';
+import { SPENDING_TYPES, summarize, type Category, type Transaction } from '../domain/transaction.ts';
 import type { AiProvider } from './ai-provider.ts';
 import { AppError } from './errors.ts';
 
@@ -41,6 +41,7 @@ Q: How much did I receive in September?
 Q: Compare March and April.
 {"op":"compare","month":"march","month2":"april","category":null,"person":null,"limit":null}`;
 
+const UNCLEAR = 'The question could not be interpreted. Please rephrase it.';
 const FINANCE_WORDS = /receiv|earn|income|spen|expens|paid|pay|sent|send|cost|summar|compare|largest|biggest|percent|%|share|money|cash|top/i;
 
 export function isFinancialQuestion(question: string): boolean {
@@ -52,11 +53,11 @@ export function parseIntent(raw: string, question: string): Intent {
   try {
     parsed = JSON.parse(raw.slice(raw.indexOf('{'), raw.lastIndexOf('}') + 1));
   } catch {
-    throw new AppError('AI_INVALID_RESPONSE', 'The question could not be interpreted. Please rephrase it.');
+    throw new AppError('AI_INVALID_RESPONSE', UNCLEAR);
   }
   const value = parsed as Record<string, unknown>;
   const q = question.toLowerCase();
-  if (!OPS.includes(value.op as Op)) throw new AppError('AI_INVALID_RESPONSE', 'The question could not be interpreted. Please rephrase it.');
+  if (!OPS.includes(value.op as Op)) throw new AppError('AI_INVALID_RESPONSE', UNCLEAR);
   const inQuestion = (name: unknown) => (typeof name === 'string' && q.includes(name.toLowerCase()) ? name.toLowerCase() : null);
   const intent: Intent = {
     op: value.op as Op,
@@ -67,6 +68,9 @@ export function parseIntent(raw: string, question: string): Intent {
     limit: Number.isInteger(value.limit) && (value.limit as number) > 0 ? Math.min(value.limit as number, 20) : null,
   };
   if (/percent|%|what share/.test(q)) intent.op = 'share';
+  else if (/\bnet\b|cash ?flow|summar|overview/.test(q) && intent.op !== 'compare') intent.op = 'summary';
+  const asksForRanking = /\b(top|most|largest|biggest|highest|who|which)\b/.test(q);
+  if ((intent.op === 'top_senders' || intent.op === 'top_expenses') && !asksForRanking) throw new AppError('AI_INVALID_RESPONSE', UNCLEAR);
   intent.category ??= Object.keys(CATEGORY_MAP).find((name) => new RegExp(`\\b${name}\\b`).test(q)) ?? null;
   return intent;
 }
@@ -116,7 +120,6 @@ export function execute(intent: Intent, question: string, source: TransactionSou
   const dates = range ? { from: range.from, to: range.to } : {};
   const category = intent.category ? CATEGORY_MAP[intent.category] : undefined;
   const rows = source.all({ ...dates, category, counterparty: intent.person ?? undefined });
-  const spending = (list: Transaction[]) => list.filter((r) => ['expense', 'fee', 'withdrawal'].includes(r.type));
 
   switch (intent.op) {
     case 'received':
@@ -136,7 +139,7 @@ export function execute(intent: Intent, question: string, source: TransactionSou
       };
     }
     case 'top_expenses': {
-      const top = spending(rows).sort((a, b) => b.amountCents - a.amountCents).slice(0, intent.limit ?? 5);
+      const top = rows.filter((r) => SPENDING_TYPES.includes(r.type)).sort((a, b) => b.amountCents - a.amountCents).slice(0, intent.limit ?? 5);
       return { period, figures: top.map((t) => ({ label: t.counterparty ?? t.type, value: formatKes(t.amountCents) })) };
     }
     case 'top_senders': {

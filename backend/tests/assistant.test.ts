@@ -80,6 +80,15 @@ test('percentage wording corrects the operation', () => {
   assert.equal(parseIntent(intent('spent', { category: 'food' }), 'What percentage went on food?').op, 'share');
 });
 
+test('net cash flow wording corrects the operation', () => {
+  assert.equal(parseIntent(intent('top_senders', { month: 'september' }), 'What was my net cash flow in September?').op, 'summary');
+});
+
+test('ranking answers need a ranking question', () => {
+  assert.throws(() => parseIntent(intent('top_senders'), 'How much came in?'), { code: 'AI_INVALID_RESPONSE' });
+  assert.equal(parseIntent(intent('top_senders'), 'Who sent me the most money?').op, 'top_senders');
+});
+
 test('invalid model output is rejected', () => {
   for (const bad of ['DROP TABLE transactions', intent('delete_all'), '{"op":']) assert.throws(() => parseIntent(bad, 'how much'), { code: 'AI_INVALID_RESPONSE' });
 });
