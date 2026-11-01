@@ -1,5 +1,5 @@
 import type { DatabaseSync, SQLInputValue } from 'node:sqlite';
-import { CATEGORIES, TRANSACTION_TYPES, type Category, type Direction, type Transaction, type TransactionType } from '../domain/transaction.ts';
+import { CATEGORIES, type Category, type Direction, type Transaction, type TransactionType } from '../domain/transaction.ts';
 
 export interface StoredTransaction extends Transaction {
   id: number;
@@ -10,7 +10,6 @@ export interface TransactionFilter {
   to?: string;
   category?: Category;
   type?: TransactionType;
-  direction?: Direction;
   counterparty?: string;
   search?: string;
 }
@@ -46,7 +45,7 @@ export class TransactionRepository {
     return new Set(references.filter((r) => lookup.get(r)));
   }
 
-  importStatement(fileName: string, transactions: Transaction[]): number {
+  importStatement(fileName: string, transactions: Transaction[]): void {
     const now = new Date().toISOString();
     this.db.exec('BEGIN IMMEDIATE');
     try {
@@ -58,7 +57,6 @@ export class TransactionRepository {
         insert.run(lastInsertRowid, t.reference, t.occurredAt, t.description, t.amountCents, t.direction, t.type, t.category, t.counterparty, now);
       }
       this.db.exec('COMMIT');
-      return Number(lastInsertRowid);
     } catch (error) {
       this.db.exec('ROLLBACK');
       throw error;
@@ -76,7 +74,6 @@ export class TransactionRepository {
     if (filter.to) add('occurred_at < ?', filter.to);
     if (filter.category) add('category = ?', filter.category);
     if (filter.type) add('type = ?', filter.type);
-    if (filter.direction) add('direction = ?', filter.direction);
     if (filter.counterparty) add("counterparty LIKE ? ESCAPE '\\'", `%${escapeLike(filter.counterparty)}%`);
     if (filter.search) add("description LIKE ? ESCAPE '\\'", `%${escapeLike(filter.search)}%`);
     return { sql: clauses.length ? `WHERE ${clauses.join(' AND ')}` : '', params };
@@ -103,5 +100,3 @@ export class TransactionRepository {
     this.db.exec('DELETE FROM statements');
   }
 }
-
-export { TRANSACTION_TYPES };

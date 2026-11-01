@@ -6,9 +6,8 @@ import helmet from 'helmet';
 import type { AiProvider } from '../application/ai-provider.ts';
 import { Assistant } from '../application/assistant.ts';
 import { AppError } from '../application/errors.ts';
-import { formatKes } from '../domain/money.ts';
 import { parseStatement } from '../domain/statement.ts';
-import { CATEGORIES, TRANSACTION_TYPES, summarize, type Category, type TransactionType } from '../domain/transaction.ts';
+import { CATEGORIES, SPENDING_TYPES, TRANSACTION_TYPES, summarize, type Category, type TransactionType } from '../domain/transaction.ts';
 import type { TransactionFilter, TransactionRepository } from '../infrastructure/transaction-repository.ts';
 
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
@@ -66,14 +65,13 @@ function overview(repo: TransactionRepository) {
   const rows = repo.all({});
   const months = new Map<string, typeof rows>();
   for (const row of rows) months.set(row.occurredAt.slice(0, 7), [...(months.get(row.occurredAt.slice(0, 7)) ?? []), row]);
-  const spendingTypes = ['expense', 'fee', 'withdrawal'];
   const categories = new Map<string, number>();
-  for (const row of rows) if (spendingTypes.includes(row.type)) categories.set(row.category, (categories.get(row.category) ?? 0) + row.amountCents);
+  for (const row of rows) if (SPENDING_TYPES.includes(row.type)) categories.set(row.category, (categories.get(row.category) ?? 0) + row.amountCents);
   return {
     summary: summarize(rows),
     monthly: [...months].map(([month, list]) => ({ month, ...summarize(list) })),
     categories: [...categories].map(([category, cents]) => ({ category, cents })).sort((a, b) => b.cents - a.cents),
-    largest: rows.filter((r) => spendingTypes.includes(r.type)).sort((a, b) => b.amountCents - a.amountCents).slice(0, 5),
+    largest: rows.filter((r) => SPENDING_TYPES.includes(r.type)).sort((a, b) => b.amountCents - a.amountCents).slice(0, 5),
     recent: rows.slice(-8).reverse(),
   };
 }
@@ -185,5 +183,3 @@ export function createServer({ repo, ai, port, staticDir }: ServerOptions) {
 
   return app;
 }
-
-export { formatKes };

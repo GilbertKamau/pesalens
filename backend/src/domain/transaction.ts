@@ -1,6 +1,7 @@
 export const TRANSACTION_TYPES = ['income', 'expense', 'transfer', 'withdrawal', 'deposit', 'fee', 'refund', 'reversal', 'unclassified'] as const;
 export type TransactionType = (typeof TRANSACTION_TYPES)[number];
 export type Direction = 'in' | 'out';
+export const SPENDING_TYPES: readonly TransactionType[] = ['expense', 'fee', 'withdrawal'];
 
 export const CATEGORIES = ['Food', 'Transport', 'Utilities', 'Shopping', 'Airtime', 'Business income', 'Freelance income', 'Salary', 'Transfers', 'Withdrawals', 'Transaction fees', 'Other'] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -16,16 +17,14 @@ export interface Transaction {
   counterparty: string | null;
 }
 
-const has = (text: string, pattern: RegExp) => pattern.test(text);
-
 export function classifyType(description: string, direction: Direction): TransactionType {
   const d = description.toLowerCase();
-  if (has(d, /reversal|reversed/)) return 'reversal';
-  if (has(d, /refund/)) return 'refund';
-  if (has(d, /charge|\bfee\b/)) return 'fee';
-  if (has(d, /withdrawal|withdraw/)) return 'withdrawal';
-  if (has(d, /deposit of funds|cash deposit/)) return 'deposit';
-  if (has(d, /m-shwari|mshwari|own account|kcb m-pesa/)) return 'transfer';
+  if (/reversal|reversed/.test(d)) return 'reversal';
+  if (/refund/.test(d)) return 'refund';
+  if (/charge|\bfee\b/.test(d)) return 'fee';
+  if (/withdrawal|withdraw/.test(d)) return 'withdrawal';
+  if (/deposit of funds|cash deposit/.test(d)) return 'deposit';
+  if (/m-shwari|mshwari|own account|kcb m-pesa/.test(d)) return 'transfer';
   return direction === 'in' ? 'income' : 'expense';
 }
 
@@ -35,16 +34,16 @@ export function classifyCategory(description: string, type: TransactionType): Ca
   if (type === 'withdrawal') return 'Withdrawals';
   if (type === 'transfer' || type === 'deposit') return 'Transfers';
   if (type === 'income') {
-    if (has(d, /salary|payroll/)) return 'Salary';
-    if (has(d, /freelance|upwork|client|invoice/)) return 'Freelance income';
-    if (has(d, /business|till sales|customer payment/)) return 'Business income';
+    if (/salary|payroll/.test(d)) return 'Salary';
+    if (/freelance|upwork|client|invoice/.test(d)) return 'Freelance income';
+    if (/business|till sales|customer payment/.test(d)) return 'Business income';
     return 'Other';
   }
-  if (has(d, /airtime|safaricom bundle|bundles/)) return 'Airtime';
-  if (has(d, /kplc|kenya power|nairobi water|zuku|wifi|utility/)) return 'Utilities';
-  if (has(d, /uber|bolt|little cab|matatu|fuel|shell|rubis|total energies/)) return 'Transport';
-  if (has(d, /java house|kfc|restaurant|cafe|hotel|food|chicken|naivas fresh/)) return 'Food';
-  if (has(d, /naivas|carrefour|quickmart|jumia|shop|supermarket/)) return 'Shopping';
+  if (/airtime|safaricom bundle|bundles/.test(d)) return 'Airtime';
+  if (/kplc|kenya power|nairobi water|zuku|wifi|utility/.test(d)) return 'Utilities';
+  if (/uber|bolt|little cab|matatu|fuel|shell|rubis|total energies/.test(d)) return 'Transport';
+  if (/java house|kfc|restaurant|cafe|hotel|food|chicken|naivas fresh/.test(d)) return 'Food';
+  if (/naivas|carrefour|quickmart|jumia|shop|supermarket/.test(d)) return 'Shopping';
   return 'Other';
 }
 
@@ -66,7 +65,7 @@ export function summarize(rows: readonly Pick<Transaction, 'amountCents' | 'dire
   let expenditure = 0;
   for (const { amountCents, direction, type } of rows) {
     if (type === 'income') income += amountCents;
-    else if (type === 'expense' || type === 'fee' || type === 'withdrawal') expenditure += amountCents;
+    else if (SPENDING_TYPES.includes(type)) expenditure += amountCents;
     else if (type === 'refund') expenditure -= amountCents;
     else if (type === 'reversal') {
       if (direction === 'in') expenditure -= amountCents;

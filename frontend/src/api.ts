@@ -61,7 +61,7 @@ export async function api<T>(path: string, init?: RequestInit): Promise<T> {
   return body.data as T;
 }
 
-export const postJson = <T,>(path: string, data: unknown) => api<T>(path, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
+export const sendJson = <T,>(method: 'POST' | 'PATCH', path: string, data: unknown) => api<T>(path, { method, headers: { 'content-type': 'application/json' }, body: JSON.stringify(data) });
 
 export const postCsv = <T,>(path: string, file: File, text: string) => api<T>(`${path}?name=${encodeURIComponent(file.name)}`, { method: 'POST', headers: { 'content-type': 'text/csv' }, body: text });
 

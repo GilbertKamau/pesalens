@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState, type FormEvent, type ReactNode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { BarChart3, Bot, FileUp, LayoutDashboard, List, RefreshCw, Shield } from 'lucide-react';
-import { api, CATEGORIES, kes, postCsv, postJson, TYPES, type AiStatus, type Answer, type Overview, type Preview, type Transaction } from './api';
+import { api, CATEGORIES, kes, postCsv, sendJson, TYPES, type AiStatus, type Answer, type Overview, type Preview, type Transaction } from './api';
 import './styles.css';
 
 type Page = 'Overview' | 'Transactions' | 'Analytics' | 'AI Assistant' | 'Privacy & Settings';
@@ -177,7 +177,7 @@ function TransactionsPage() {
   const set = (key: keyof typeof filters) => (e: { target: { value: string } }) => setFilters({ ...filters, [key]: e.target.value });
   const recategorize = async (id: number, category: string) => {
     try {
-      await api(`/transactions/${id}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ category }) });
+      await sendJson('PATCH', `/transactions/${id}`, { category });
       load();
     } catch (e) {
       setError((e as Error).message);
@@ -245,7 +245,7 @@ function AssistantPage({ ai }: { ai: AiStatus | null }) {
     setTurns((t) => [...t, { question: text }]);
     const finish = (turn: Partial<Turn>) => setTurns((t) => [...t.slice(0, -1), { question: text, ...turn }]);
     try {
-      finish({ answer: await postJson<Answer>('/assistant', { question: text }) });
+      finish({ answer: await sendJson<Answer>('POST', '/assistant', { question: text }) });
     } catch (e) {
       finish({ error: (e as Error).message });
     }
