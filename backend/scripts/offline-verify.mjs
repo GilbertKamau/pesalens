@@ -27,7 +27,7 @@ for (;;) {
 }
 log(`OFFLINE CONFIRMED: ${PROBES.join(', ')} all unreachable`);
 
-const server = spawn(process.execPath, ['--no-warnings', 'src/main.ts'], { cwd: backend, stdio: 'ignore', env: { ...process.env, QVAC_RPC_INIT_TIMEOUT_MS: '240000' } });
+const server = spawn(process.execPath, ['--no-warnings', 'src/main.ts'], { cwd: backend, stdio: 'ignore' });
 const started = Date.now();
 let state = '';
 while (state !== 'READY' && state !== 'ERROR' && Date.now() - started < 240_000) {

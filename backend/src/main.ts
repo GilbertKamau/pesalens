@@ -6,6 +6,8 @@ import { openDatabase } from './infrastructure/database.ts';
 import { QvacProvider } from './infrastructure/qvac-provider.ts';
 import { TransactionRepository } from './infrastructure/transaction-repository.ts';
 
+process.env.QVAC_RPC_INIT_TIMEOUT_MS ??= '240000';
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const PORT = Number(process.env.PORT ?? 4310);
 const dataDir = resolve(root, 'data');
